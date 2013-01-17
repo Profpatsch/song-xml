@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+
+<!--This is an example with all tags and multiple languages filled in.-->
+<!--For more detailed description of tags, their order and rules look at the (rather self-explanatory RelaxNG xml scheme.-->
+
+<song>
+  <tags>
+    <info>
+      <title>Song Title</title>
+      <alttitle>Alternative Title</alttitle>
+      <alttitle>Alternative Title 2</alttitle>
+      <alttitle>Alternative Title n</alttitle>
+      <otitle>Original Title</otitle>
+      <writer>Writer</writer>
+      <textwriter>Textwriter</textwriter>
+      <textwriter>Textwriter 2</textwriter>
+      <textwriter>Textwriter n</textwriter>
+      <musicwriter>Musicwriter</musicwriter>
+      <musicwriter>Musicwriter 2</musicwriter>
+      <musicwriter>Musicwriter n</musicwriter>
+      <translator>Translator</translator>
+      <translator>Translator 2</translator>
+      <translator>Translator n</translator>
+      <album>Album on which the song appears</album>
+      <album>Album 2</album>
+      <album>Album 3</album>
+      <year>2005</year>
+      <date>2005-03-20</date>
+      <genre>Rock</genre>
+      <genre>Pop</genre>
+      <genre>Yet another genre</genre>
+      <influence>Iron Maiden</influence>
+      <influence>Skrillex</influence>
+      <influence>Lance Armstrong</influence>
+      <influence>…</influence>
+    </info>
+
+    <legal>
+      <license>CC-BY-SA 2.0</license>
+      <copyrightholder>Copyrightholder</copyrightholder>
+      <addcopyrightinfo>Some more info about the license</addcopyrightinfo>
+      <iswc>T-123.456.789-Z</iswc>
+    </legal>
+
+    <properties>
+      <key>Cm</key>
+      <transpose>-3</transpose>
+      <printtranspose>2</printtranspose>
+      <projectiontranspose>1</projectiontranspose>
+      <bpm>148</bpm>
+      <timesignature>3/4</timesignature>
+    </properties>
+
+    <annotations>
+      <category>Some category</category>
+      <category>Some other category</category>
+      <keyword>A keyword</keyword>
+      <keyword>Another keyword</keyword>
+      <comment>One comment. This could span several lines or whatever.</comment>
+      <internalnumber>Internal number. This could be a number in a local songbook printed only for one location.</internalnumber>
+    </annotations>
+
+    <custom>
+      <myprogram>
+        <mycustomtag myattribute="somevalue">Things my app direly needs to work with this song (don’t bloat!)</mycustomtag>
+        <somemoretags>stuff</somemoretags>
+      </myprogram>
+      <anotherprogram>
+        <stuff>uiae</stuff>
+      </anotherprogram>
+    </custom>
+      
+      <!--Supports all reasonable tags from above for localizing. For a very good documentation, look into the scheme. It is really, really, really self-explanatory!-->
+    <langtags xml:lang="en-US" originallanguage="yes" />
+    <langtags xml:lang="fr" />
+    <langtags xml:lang="jp" originallanguage="no" />
+
+  </tags>
+
+</song>

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<!--The smallest file possible.
+     Rather useless, since it only contains title and language.-->
+
+<song>
+  <tags>
+    <info>
+      <title>Song Title</title>
+    </info>
+    <langtags xml:lang="en-US" />
+  </tags>
+</song>

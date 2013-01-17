@@ -1,0 +1,340 @@
+#
+# SongXML v0.2.2
+# Author: Profpatsch
+# This file format is inteded to be an open standard for Songs and their
+# tabs and should thus not be changed after it reaches v1.0.
+#  
+# This scheme file is written in Relax NG Compact Syntax.
+# It validates SongXML files.
+
+grammar{
+	start = element-song
+# Each file consists of one mandatory <tags>-part which carries all 
+# information and of severeral optional <text>- and <chord>-parts that hold
+# the text and the chords seperately.
+
+
+	element-song = element song {
+		element-tags,
+		element-text*,
+		element-chords*
+	}
+
+
+	# The <tags>-part consists of following sections:
+	# <info>: Holds the general metadata.
+	# <legal>: Holds legal data.
+	# <properties>: Holds musical properties of the song.
+	# <annotations>: Holds personal annotations of the user.
+	# <custom>: Lets programs define their own tags for internal use.
+	# <langtags xml:lang="xx">: Indicates languages and optional changes
+	# 	of tags when showing different ones. At least one <langtags> is
+	# 	required.
+	# Be aware that these tags have to be in order, but are mostly optional.
+	element-tags = element tags {
+		
+		# This holds the only required tag, <title>. Thus, <info> is also
+		# required. Be aware that <title> must always be first.
+		# Every other tag and their order is optional.
+		element info {
+			element title {text},
+			(
+			element alttitle {text}*&
+			# This is for simple editors, which only have a field for
+			# an original title but don’t query for its language.
+			# Should be overlayed with the <langtags originallanguage="yes">
+			# <otitle>-tag if available.
+			element otitle {text}&
+			element writer {text}*&
+			element textwriter {text}*&
+			element musicwriter {text}*&
+			element translator {text}*&
+			# Album(s) on which the song appears.
+			element album {text}*&
+			# Year of publishing/releasing.
+			element year {xsd:gYear}&
+			element date {xsd:date}&
+			element genre {text}*&
+			element influence {text}*
+			)?
+		},
+		element legal {
+			(
+			element license {text}&
+			element copyrightholder {text}&
+			element addcopyrightinfo {text}&
+			# International Standard Musical Work Code
+			element iswc {iwscToken}
+			)?
+		}?,
+		element properties {
+			(
+			element key {keyToken}&
+			# Transpose the chords by the amount specified.
+			#    +1: one half-step in #-direction.
+			#    -1: one half-step in b-direction.
+			# transpose: screen
+			# printtranspose: printing
+			# projectiontranspose: projection
+			element transpose {xsd:integer}&
+			element printtranspose {xsd:integer}&
+			element projectiontranspose {xsd:integer}&
+			element bpm {xsd:positiveInteger}&
+			# e.g. 4/4 or 3/4.
+			element timesignature {timeSignatureToken}
+			)?
+		}?,
+		element annotations {
+			(
+			element category {text}*&
+			element keyword {text}*&
+			element comment {text}&
+			element internalnumber {text}
+			)?
+		}?,
+		
+		# Custom lets programs define their own tags for internal use.
+		# It allows for two levels of deepness.
+		# The first level tag must be the program name and has to be as
+		# unique as possible. The second level allows for custom elements
+		# with attributes.
+		# Applications should never (ever!) use tags that bloat the files
+		# and/or could be stored independently. Thinking about it, this 
+		# probably shouldn’t be used at all.
+		element-custom?,
+		
+		# At least one of this tags is required to indicate the language
+		# of the song file. Can be empty.
+		# Every additional language needs its own <langtags> with at least
+		# the xml:lang attribute, which holds the international language
+		# code consisting of to lowercase letters with an optional dash and
+		# two uppercase letters for regional differences.
+		# The originallanguage-attribute indicates this particular language
+		# is the one the song is originally written in, if set to "yes".
+		# If omitted, the value is "no".
+		element-langtags+
+	}
+	
+	element-langtags = element langtags {
+		attribute xml:lang {xsd:language},
+		# TODO: Should this be mandatory at least once?
+		attribute originallanguage {"yes"|"no"}?,
+		
+		# The elements are thought to overlay general tags with the same
+		# name in the fitting language context.
+		# The <title> is optional, but has still to be the first element
+		element info {
+			element title {text}?,
+			(
+			element alttitle {text}*&
+			element translator {text}*&
+			element album {text}&
+			element year {xsd:gYear}&
+			element date {xsd:date}&
+			element songbook {text}&
+			element number {text}
+			)?
+		}?,
+		element legal {
+			(
+			element license {text}&
+			element copyrightholder {text}&
+			element addcopyrightinfo {text}
+			)?
+		}?,
+		element annotations {
+			(
+			element category {text}*&
+			element keyword {text}*&
+			element comment {text}
+			)?
+		}?,
+		element-custom?
+	}
+	
+	element-custom = element custom {
+		element anyName {
+			element anyName {
+				attribute anyName {text}*,
+				text
+			}*
+		}*
+	}
+
+
+
+	# The <text>-part is where the songs text and format is stored.
+	# They are optional, but you need one for every <chords> you want to
+	# include.
+	# Every <text> needs an xml:lang-attribute with a language code. This
+	# code needs to have a corresponding <langtags>-element with the same
+	# code.
+	#
+	# <block>s seperate the song in different named parts that you probably
+	# know as "Chorus", "Verse", "Bridge" etc. But there is more 
+	# functionality to it. Blocks contain <line>s.
+	# <block>: A block that you know from an average song.
+	#     Supported types: verse, chorus, bridge, coda, part, pre-chorus,
+	#     pre-bridge, pre-coda, misc, unknown
+	#     You can (and should) add a whitespace and a number to the type to
+	#     make it identical in every song, e.g. "verse 2"
+	# <chordblock>: A block for parts that normally don't, but can, have a
+	#     text.
+	#     Supported types: intro, outro, interlude
+	#     Can be empty <chordblock />
+	# <customblock>: Like it says, it's custom. Don't use it if there's an
+	#     alternative. You can use your own "type"-attribute in this one.
+	# <textblock>: A block that has only text, no chords.
+	# Every block supports these attributes (as close to HTML as possible):
+	#     style-attribute: 
+	#        em (emphasis/italic)
+	#        strong (bold)
+	#        mark
+	#        u (underlined; please forgive me)
+	#        You can combine them by adding ';' after each one (e.g. u;em;)
+	#     color-attribute: #RRGGBB
+	#     The following attributes specify how the blocks are shown:
+	#        "last": The block is combined with the last, it looks like it 
+	#                is one block.
+	#        "own":  The block is drawn on its own.
+	#     view-attribute:       How the block is shown on screen.
+	#     print-attribute:      How the block is printed.
+	#     procection-attribute: How the block is shown when projected.
+	# <hr />: A seperator between blocks. It's empty.
+	element-text = element text {
+		attribute xml:lang {xsd:language},
+		(
+		element block {
+			attribute type {xsd:token {pattern="(verse|chorus|bridge|coda|part|pre-chorus|pre-bridge|pre-coda|misc|unknown)\s?[0-9]*"}},
+			block-attributes,
+			element-line+
+		}*&
+		element chordblock {
+			attribute type {"intro"|"outro"|"interlude"},
+			block-attributes,
+			(empty | element-line+)
+		}*&
+		element customblock {
+			attribute type {text},
+			block-attributes,
+			element-line+
+		}*&
+		element textblock {
+			attribute type {text},
+			block-attributes,
+			element-line+
+		}*&
+		element hr {empty}*
+		)?
+	}
+	
+	block-attributes =
+		attribute style {textStyleToken}?,
+		attribute color {colorToken}?,
+		attribute view {"own"|"last"}?,
+		attribute print {"own"|"last"}?,
+		attribute projection {"own"|"last"}?
+	
+	# Every block that is not emtpy consists of one ore more <line>-elements.
+	# These support the same style- and color-attributes as blocks.
+	# The content of lines is obviously mixed text and elements.
+	# Supported elements: <strong>, <em>, <u>, <mark>, <font color="#RRGGBB">
+	element-line = element line {
+		line-attributes,
+		mixed {
+			element strong {text}*&
+			element em {text}*&
+			element u {text}*&
+			element mark {text}*&
+			element font {
+				attribute color {colorToken},
+				text
+			}*
+		}
+	}
+	
+	line-attributes =
+		attribute style {textStyleToken}?,
+		attribute color {colorToken}?
+
+
+
+	# The <chords>-part is where the chords and their positions are stored.
+	# They are optional, but for every <chords> you need a corresponding
+	# <text> and <langtags> with the same xml:lang value, even if they are
+	# empty.
+	#
+	# <block>: One for every kind of block in the corresponding <text>,
+	#    except <textblock>. Containing at least one <line>.
+	# <line>: One for every line in the corresponding block in <text>.
+	#    Containing zero or more <chord>s and <bar>s.
+	# <chord>: Uses a universal system to support every possible chord.
+	#    Description at the end of the file.
+	#    position-attribute: -1, 0, 0.5, 1, 1.5, 2,...
+	#        Defines the position of the chord.
+	#		 -1: Before the beginning of the line
+	#		 number: Number of letter the chord belongs to.
+	#		 .5: Half a letter (exact positioning).
+	# Every <block>, <line> and <chord> can have 
+	#        line-attributes (style+color).
+	# <bar />: A symbol to indicate length of chords (e.g. | ).
+	#    Same positioning as <chords>. Empty.
+	element-chords = element chords {
+		attribute xml:lang {xsd:language},
+		element block {
+			line-attributes,
+			element line {
+				line-attributes,
+				( element-chord*&
+				  element-bar* )
+			}+
+		}*
+	}
+	
+	element-chord = element chord {
+		line-attributes,
+		attribute position {"-1"|positionValue},
+		chordToken
+	}
+	
+	element-bar = element bar {
+		attribute position {"-1"|positionValue},
+		empty
+	}
+
+
+	iswcToken = xsd:token {pattern="[0-9]{10} | T\-[0-9]{9}\-[0-9] | T\-[0-9]{3}\.[0-9]{3}\.[0-9]{3}\-[0-9]\.?"}
+	keyToken = xsd:token {pattern="[A-G](b{1,2}|#{1,2})?"}
+	timeSignatureToken = xsd:token {pattern="[0-9]+/[0-9]+"}
+	textStyleToken = em|strong|u|mark|xsd:token {pattern="(em;|strong;|u;|mark;){2,}"}
+	colorToken = xsd:token {pattern="#[a-fA-F0-9]{6}"}
+	chordToken = xsd:token {pattern="(\(\s)?[A-G](b{1,2}|#{1,2})?(m|dim|aug)?(\sM?(7|11|13))?(\ssus(2|4))?(\s(b{1,2}|#{1,2})?[0-9]+)*(\sno[0-9]+)*(\s/[A-G](b{1,2}|#{1,2})?)?(\s\))?(\s\|\s(\(\s)?[A-G](b{1,2}|#{1,2})?(m|dim|aug)?(\sM?(7|11|13))?(\ssus(2|4))?(\s(b{1,2}|#{1,2})?[0-9]+)*(\sno[0-9]+)*(\s/[A-G](b{1,2}|#{1,2})?)?(\s\))?)?"}
+	positionValue = xsd:token {pattern="[0-9]+(\.5)?"}
+
+}
+# Chords (examples for C):
+# 
+# Stems: C, Cm, Caug, Cdim; up to bb/##
+# Specifiers:
+#  - Extended chords
+#    - 7th: 7 (minor), M7 (major)
+# 	 - 9th/11th/13th (imply smaller ones): 9/ 11/ 13 (dominant),
+# 	   M9/ M11/ M13 (major)
+#  - addX without implying other notes: X 
+#    (X: number, but oviously not 9,11,13), #X, bX, ##X, bbX
+#  - sus2/4: sus2/ sus4 (only with major stem)
+#  - noX: noX (X: number, exclude X from the chord)
+# Bassnote:
+#  - /N (N: Note)
+# Polychords:
+#  - | C (C: Chord with Stem, Specifiers, Bassnote, but without Polychord; 
+#    upperchord|lowerchord)
+# 
+# Order: Stem (extended_chord) (sus) ([n*]addX) ([m*]noX) (/N) (| Stem (extended_chord) (sus) ([n*]addX) ([n*]noX) (/N))
+# 	Variables:
+# 		X: number>2
+# 		n,m: number>=0
+# 		N: Note
+# 
+# To check if your chords are valid, use the Regular Expression in the 
+# definition of chordToken (above this comment).
